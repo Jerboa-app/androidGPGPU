@@ -20,6 +20,7 @@ fun statsScreen(statsViewModel: StatsViewModel){
         onCPUStatsChanged = {statsViewModel.onCPUStatsChanged(it)},
         onGPUStatsChanged = {statsViewModel.onGPUStatsChanged(it)},
         onNChanged = {statsViewModel.onNChanged(it)},
-        cpuBenchmark = {statsViewModel.cpuBenchmark()}
+        cpuBenchmark = {statsViewModel.cpuBenchmark()},
+        gpuBenchmark = {statsViewModel.gpuBenchmark()}
     )
 }

@@ -25,13 +25,14 @@ fun stats(
     onCPUStatsChanged: (CPUData)->Unit,
     onGPUStatsChanged: (GPUData)->Unit,
     onNChanged: (Int)->Unit,
-    cpuBenchmark: ()->Unit
+    cpuBenchmark: ()->Unit,
+    gpuBenchmark: ()->Unit
 ){
     Column(){
         slider("Matrix Size (NxN)",onNChanged)
         Spacer(modifier = Modifier.height(32.dp))
         Row() {
-            Text("Runtime: " + cpuStats.time, Modifier.weight(1f))
+            Text("Runtime: " + cpuStats.time +" ms", Modifier.weight(1f))
             Spacer(modifier = Modifier.height(32.dp))
             Button(onClick = {
                 cpuBenchmark()
@@ -47,11 +48,25 @@ fun stats(
 
             }
         }
-        Column(Modifier.weight(1f)) {
-            Text("Runtime: " + gpuStats.time)
-            Text("Drawing: " + gpuStats.drawTime)
-            Text("Memory Transfer: " + gpuStats.textureTime)
-            Text("Error: " + gpuStats.error)
+        Row() {
+            Column(Modifier.weight(1f)) {
+                Text("Runtime: " + gpuStats.time + " ms")
+                Text("Drawing: " + gpuStats.drawTime+" ns")
+                Text("Memory Transfer: " + gpuStats.textureTime+" ms")
+                Text("Error: " + gpuStats.error)
+            }
+            Button(onClick = {
+                gpuBenchmark()
+            }) {
+                // Inner content including an icon and a text label
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = "Favorite",
+                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                )
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Like")
+            }
         }
     }
 }
