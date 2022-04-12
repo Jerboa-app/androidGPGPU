@@ -101,17 +101,6 @@ fun transferToTexture2DRGBA32F(id: Int, data: FloatBuffer, n: Int): Int{
         gl3.GL_FLOAT,
         data
     )
-    gl3.glTexImage2D(
-        gl3.GL_TEXTURE_2D,
-        0,
-        gl3.GL_LUMINANCE,
-        n,
-        n,
-        0,
-        gl3.GL_LUMINANCE,
-        gl3.GL_FLOAT,
-        data
-    )
     return glError()
 }
 

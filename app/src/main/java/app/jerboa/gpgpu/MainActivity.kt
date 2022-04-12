@@ -1,5 +1,8 @@
 package app.jerboa.gpgpu
 
+import android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION
+import android.opengl.EGL14.EGL_OPENGL_ES2_BIT
+import android.opengl.GLUtils
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,10 +11,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
 import app.jerboa.gpgpu.ViewModel.StatsViewModel
 import app.jerboa.gpgpu.composable.statsScreen
 import app.jerboa.gpgpu.ui.theme.GPGPUTheme
+import javax.microedition.khronos.egl.EGL10
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.egl.EGLContext
+
 
 class MainActivity : ComponentActivity() {
 

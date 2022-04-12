@@ -2,6 +2,7 @@ package app.jerboa.gpgpu.maths
 
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -9,7 +10,7 @@ fun genMatrix(n: Int, seed: Long = 0): Array<Float> {
     val A: Array<Float> = Array<Float>(n*n){0f}
     for (i in 0 until n){
         for (j in 0 until n){
-            A[i*n+j] = Random(seed).nextFloat()
+            A[i*n+j] = Random(seed+i.toLong()).nextFloat()
         }
     }
     return A
@@ -66,4 +67,34 @@ fun matrixTo2x2BlockMatrix(A: Array<Float>): Array<Float> {
         }
     }
     return T
+}
+
+//nb = sqrt((n*n/4))
+//nb^2 = n^2  /4
+//n = sqrt(4 nb^2)
+
+fun BlockMatrix2x2ToMatrix(A: Array<Float>): Array<Float>{
+    val nb = ceil(sqrt(A.size/4.0f)).toInt()
+    val n = ceil(sqrt(4f*nb*nb)).toInt()
+    val T = Array<Float>(n*n){0f}
+    for (i in 1 until n+1){
+        for (j in 1 until n+1){
+            val bi: Int = ceil(i/2f).toInt()
+            val bj: Int = ceil(j/2f).toInt()
+            val li = floor(i/bi.toFloat()).toInt()
+            val lj = floor(j/bj.toFloat()).toInt()
+            // blockIdx.x*n + blockIdx.y + local index
+            T[(i-1)*n+j-1] = A[4*( (bi-1)*nb+bj-1)+2*(li-1)+lj-1]
+        }
+    }
+    return T
+}
+
+fun rmse(A:Array<Float>,B:Array<Float>): Float {
+    var e = 0f
+    for (i in A.indices){
+        println(A[i].toString()+ ", "+B[i].toString())
+        e += (A[i] - B[i]).pow(2)
+    }
+    return sqrt(e / A.size.toFloat())
 }

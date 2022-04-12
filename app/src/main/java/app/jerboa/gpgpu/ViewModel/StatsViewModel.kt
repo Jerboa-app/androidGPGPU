@@ -7,8 +7,10 @@ import androidx.lifecycle.viewModelScope
 import app.jerboa.gpgpu.data.CPUData
 import app.jerboa.gpgpu.data.GPUData
 import app.jerboa.gpgpu.gl.matMul
+import app.jerboa.gpgpu.maths.BlockMatrix2x2ToMatrix
 import app.jerboa.gpgpu.maths.genMatrix
 import app.jerboa.gpgpu.maths.matMulCPU
+import app.jerboa.gpgpu.maths.rmse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,7 +23,7 @@ object CONSTANTS {
 
 class StatsViewModel : ViewModel(){
     private val _cpuStats = MutableLiveData(CPUData(0))
-    private val _gpuStats = MutableLiveData(GPUData(0,0,0,0))
+    private val _gpuStats = MutableLiveData(GPUData(0,0,0,0f))
     private val _n = MutableLiveData(2)
 
     val cpuStats: LiveData<CPUData> = _cpuStats
@@ -32,6 +34,9 @@ class StatsViewModel : ViewModel(){
     private var invalidatedMatrices: Boolean = false
     private var matrixA: Array<Float> = genMatrix(n.value!!,0)
     private var matrixB: Array<Float> = genMatrix(n.value!!,0)
+
+    private var cpuC: Array<Float>? = null
+    private var gpuC: Array<Float>? = null
 
     fun onCPUStatsChanged(newStats: CPUData){
         _cpuStats.value = newStats
@@ -59,11 +64,22 @@ class StatsViewModel : ViewModel(){
         }
         val t = measureTimeMillis {
             withContext(Dispatchers.IO) {
-                val C = matMulCPU(matrixA, matrixB, m)
+                cpuC = matMulCPU(matrixA, matrixB, m)
             }
         }
         println(t)
         onCPUStatsChanged(CPUData(t))
+        if (gpuC != null){
+            val newGPUStats = gpuStats.value!!
+            onGPUStatsChanged(
+                GPUData(
+                    newGPUStats.time,
+                    newGPUStats.textureTime,
+                    newGPUStats.drawTime,
+                    rmse(gpuC!!,cpuC!!)
+                )
+            )
+        }
     }
 
     fun cpuBenchmark(){
@@ -77,6 +93,8 @@ class StatsViewModel : ViewModel(){
         if (invalidatedMatrices){
             matrixA = genMatrix(m,seed)
             matrixB = genMatrix(m,seed)
+            cpuC = null
+            gpuC = null
         }
         var c = Triple<FloatArray,Long,Long>(FloatArray(0),0,0)
         val t = measureTimeMillis {
@@ -85,7 +103,21 @@ class StatsViewModel : ViewModel(){
             }
         }
 
-        onGPUStatsChanged(GPUData(t,c.second,c.third,0))
+        gpuC = BlockMatrix2x2ToMatrix(c.first.toTypedArray())
+        onGPUStatsChanged(GPUData(t,c.second,c.third,0f))
+
+        if (cpuC != null){
+            val newGPUStats = gpuStats.value!!
+            onGPUStatsChanged(
+                GPUData(
+                    newGPUStats.time,
+                    newGPUStats.textureTime,
+                    newGPUStats.drawTime,
+                    rmse(gpuC!!,cpuC!!)
+                )
+            )
+        }
+
     }
 
     fun gpuBenchmark(){

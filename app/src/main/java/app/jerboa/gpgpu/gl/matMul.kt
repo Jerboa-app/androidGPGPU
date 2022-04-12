@@ -1,17 +1,90 @@
 package app.jerboa.gpgpu.gl
 
+import android.graphics.SurfaceTexture
+import android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION
+import android.opengl.EGL14.EGL_OPENGL_ES2_BIT
+import android.opengl.GLUtils
 import app.jerboa.gpgpu.data.glMatMulShader
 import app.jerboa.gpgpu.maths.matrixTo2x2BlockMatrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import javax.microedition.khronos.egl.EGL10
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.egl.EGLContext
 import kotlin.math.ceil
 import kotlin.math.sqrt
-import java.nio.FloatBuffer
-import java.nio.IntBuffer
 import kotlin.system.measureNanoTime
 import android.opengl.GLES30 as gl3
 
+
 fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
+    val mEgl = EGLContext.getEGL() as EGL10
+
+    val mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY)
+
+    if (mEglDisplay === EGL10.EGL_NO_DISPLAY) throw RuntimeException(
+        "Error: eglGetDisplay() Failed " + GLUtils.getEGLErrorString(
+            mEgl.eglGetError()
+        )
+    )
+
+    val version = IntArray(2)
+
+    if (!mEgl.eglInitialize(
+            mEglDisplay,
+            version
+        )
+    ) throw RuntimeException("Error: eglInitialize() Failed " + GLUtils.getEGLErrorString(mEgl.eglGetError()))
+
+    val maEGLconfigs = arrayOfNulls<EGLConfig>(1)
+
+    val configsCount = IntArray(1)
+    val configSpec = intArrayOf(
+        EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL10.EGL_RED_SIZE, 8,
+        EGL10.EGL_GREEN_SIZE, 8,
+        EGL10.EGL_BLUE_SIZE, 8,
+        EGL10.EGL_ALPHA_SIZE, 8,
+        EGL10.EGL_DEPTH_SIZE, 0,
+        EGL10.EGL_STENCIL_SIZE, 0,
+        EGL10.EGL_NONE
+    )
+    require(
+        !(!mEgl.eglChooseConfig(
+            mEglDisplay,
+            configSpec,
+            maEGLconfigs,
+            1,
+            configsCount
+        ) || configsCount[0] == 0)
+    ) { "Error: eglChooseConfig() Failed " + GLUtils.getEGLErrorString(mEgl.eglGetError()) }
+
+    if (maEGLconfigs.get(0) == null) throw RuntimeException("Error: eglConfig() not Initialized")
+
+    val attrib_list = intArrayOf(EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE)
+
+    val mEglContext =
+        mEgl.eglCreateContext(mEglDisplay, maEGLconfigs.get(0), EGL10.EGL_NO_CONTEXT, attrib_list)
+
+    val surfaceTexture = SurfaceTexture(0)
+    surfaceTexture.setDefaultBufferSize(1,1);
+
+    val mEglSurface = mEgl.eglCreateWindowSurface(mEglDisplay, maEGLconfigs[0], surfaceTexture, null);
+
+    if (mEglSurface == null || mEglSurface == EGL10.EGL_NO_SURFACE)
+    {
+        val error = mEgl.eglGetError();
+
+        if (error == EGL10.EGL_BAD_NATIVE_WINDOW)
+        {
+            println("Error: createWindowSurface() Returned EGL_BAD_NATIVE_WINDOW.")
+        }
+    }
+    if (!mEgl.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext))
+        println("Make current failed")
+
+
     var timeMem: Long = 0
     var timeDraw: Long = 0
     var clockMemStart = System.currentTimeMillis()
@@ -20,13 +93,13 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     val B = matrixTo2x2BlockMatrix(y)
     var n = ceil(sqrt(B.size.toDouble() / 4f)).toInt()
     // x
-    val xTexBuffer = IntBuffer.allocate(1)
+    val xTexBuffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
     gl3.glGenTextures(1, xTexBuffer)
     xTexBuffer.flip()
     xTexBuffer.limit(1)
     val xTex = xTexBuffer[0]
     // y
-    val yTexBuffer = IntBuffer.allocate(2)
+    val yTexBuffer = ByteBuffer.allocateDirect(2 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
     yTexBuffer.flip()
     yTexBuffer.limit(2)
     gl3.glGenTextures(2, yTexBuffer)
@@ -35,13 +108,13 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     glError()
 
     // get texture data
-    var dataBufferX = FloatBuffer.allocate(B.size)
+    var dataBufferX = ByteBuffer.allocateDirect(B.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     dataBufferX.put(B.toFloatArray())
 
-    var dataBufferY = FloatBuffer.allocate(B.size)
+    var dataBufferY = ByteBuffer.allocateDirect(B.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     dataBufferY.put(B.toFloatArray())
 
-    val returnBuffer = FloatBuffer.allocate(B.size)
+    val returnBuffer = ByteBuffer.allocateDirect(B.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     returnBuffer.put(FloatArray(B.size) { -1f })
 
     // init textures and transfer data
@@ -66,7 +139,7 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
 
     clockMemStart = System.currentTimeMillis()
     // create and bind a frame buffer
-    val fboBuffer = IntBuffer.allocate(1)
+    val fboBuffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
     gl3.glGenFramebuffers(1, fboBuffer)
     fboBuffer.flip()
     fboBuffer.limit(1)
@@ -109,7 +182,7 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     glError()
 
     // set the draw buffer
-    val drawBuffers = IntBuffer.allocate(1)
+    val drawBuffers = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
     drawBuffers.put(gl3.GL_COLOR_ATTACHMENT0)
     drawBuffers.flip()
     drawBuffers.limit(1)
@@ -124,7 +197,7 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
 
     glError()
 
-    val verts: FloatBuffer = ByteBuffer.allocateDirect(6*3 * Float.SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    val verts: FloatBuffer = ByteBuffer.allocateDirect(6*3 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
         //FloatBuffer.allocate(6 * 3)
     verts.put(
         listOf<Float>(
@@ -139,7 +212,7 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     verts.flip()
     verts.limit(6 * 3)
 
-    val texCoords: FloatBuffer = ByteBuffer.allocateDirect(6*2 * Float.SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    val texCoords: FloatBuffer = ByteBuffer.allocateDirect(6*2 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     texCoords.put(
         listOf<Float>(
             0f, 0f,
@@ -164,11 +237,9 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     glError()
 
     timeMem += System.currentTimeMillis()-clockMemStart
-
     timeDraw = measureNanoTime {
         gl3.glDrawArrays(gl3.GL_TRIANGLES, 0, 6)
     }
-    gl3.glFinish()
     glError()
 
 
@@ -209,6 +280,12 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     val ret: FloatArray = FloatArray(x.size) { 0f }
     for (i in x.indices){
         ret[i] = returnBuffer[i]
+    }
+
+    returnBuffer.flip()
+    returnBuffer.limit(B.size)
+    for (i in B.indices) {
+        println("Read: " + returnBuffer.get(i))
     }
     returnBuffer.clear()
 
