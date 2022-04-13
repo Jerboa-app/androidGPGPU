@@ -7,10 +7,7 @@ import androidx.lifecycle.viewModelScope
 import app.jerboa.gpgpu.data.CPUData
 import app.jerboa.gpgpu.data.GPUData
 import app.jerboa.gpgpu.gl.matMul
-import app.jerboa.gpgpu.maths.BlockMatrix2x2ToMatrix
-import app.jerboa.gpgpu.maths.genMatrix
-import app.jerboa.gpgpu.maths.matMulCPU
-import app.jerboa.gpgpu.maths.rmse
+import app.jerboa.gpgpu.maths.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,6 +50,8 @@ class StatsViewModel : ViewModel(){
             _n.value = newN
         }
         invalidatedMatrices=true
+        cpuC = null
+        gpuC = null
         seed = System.currentTimeMillis()
     }
 
@@ -61,13 +60,16 @@ class StatsViewModel : ViewModel(){
         if (invalidatedMatrices){
             matrixA = genMatrix(m,seed)
             matrixB = genMatrix(m,seed)
+            cpuC = null
+            gpuC = null
+            invalidatedMatrices = false
         }
         val t = measureTimeMillis {
             withContext(Dispatchers.IO) {
                 cpuC = matMulCPU(matrixA, matrixB, m)
             }
         }
-        println(t)
+        printMatrix(cpuC!!)
         onCPUStatsChanged(CPUData(t))
         if (gpuC != null){
             val newGPUStats = gpuStats.value!!
@@ -95,6 +97,7 @@ class StatsViewModel : ViewModel(){
             matrixB = genMatrix(m,seed)
             cpuC = null
             gpuC = null
+            invalidatedMatrices = false
         }
         var c = Triple<FloatArray,Long,Long>(FloatArray(0),0,0)
         val t = measureTimeMillis {
@@ -103,7 +106,8 @@ class StatsViewModel : ViewModel(){
             }
         }
 
-        gpuC = BlockMatrix2x2ToMatrix(c.first.toTypedArray())
+        gpuC = trimMatrix(BlockMatrix2x2ToMatrix(c.first.toTypedArray()),m)
+
         onGPUStatsChanged(GPUData(t,c.second,c.third,0f))
 
         if (cpuC != null){

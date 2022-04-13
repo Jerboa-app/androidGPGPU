@@ -6,6 +6,7 @@ import android.opengl.EGL14.EGL_OPENGL_ES2_BIT
 import android.opengl.GLUtils
 import app.jerboa.gpgpu.data.glMatMulShader
 import app.jerboa.gpgpu.maths.matrixTo2x2BlockMatrix
+import app.jerboa.gpgpu.maths.printMatrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -19,6 +20,7 @@ import android.opengl.GLES30 as gl3
 
 
 fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
+    // with thanks https://stackoverflow.com/questions/18529021/android-initialise-opengl2-0-context-with-egl/18537383#18537383
     val mEgl = EGLContext.getEGL() as EGL10
 
     val mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY)
@@ -92,6 +94,7 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     val A = matrixTo2x2BlockMatrix(x)
     val B = matrixTo2x2BlockMatrix(y)
     var n = ceil(sqrt(B.size.toDouble() / 4f)).toInt()
+    println("A size gl = "+A.size.toString()+" n gl = $n")
     // x
     val xTexBuffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
     gl3.glGenTextures(1, xTexBuffer)
@@ -277,16 +280,16 @@ fun matMul(x:Array<Float>, y:Array<Float>): Triple<FloatArray, Long, Long> {
     yTexBuffer.clear()
     fboBuffer.clear()
 
-    val ret: FloatArray = FloatArray(x.size) { 0f }
-    for (i in x.indices){
+    val ret: FloatArray = FloatArray(B.size) { 0f }
+    for (i in B.indices){
         ret[i] = returnBuffer[i]
     }
 
-    returnBuffer.flip()
-    returnBuffer.limit(B.size)
-    for (i in B.indices) {
-        println("Read: " + returnBuffer.get(i))
-    }
+//    returnBuffer.flip()
+//    returnBuffer.limit(B.size)
+//    for (i in B.indices) {
+//        println("Read: " + returnBuffer.get(i))
+//    }
     returnBuffer.clear()
 
     timeMem += System.currentTimeMillis()-clockMemStart
