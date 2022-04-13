@@ -42,9 +42,15 @@ package app.jerboa.gpgpu.data
             "       o_fragColor = o_fragColor + BlockMul(A,B);\n"+
             "   }\n"+
 
-    and placed within the 0 attribute as output
+    and placed within the 0 attribute as output.
 
-    Recall openGL has textures indexed like (normed float coords):
+    See matrix.kt for i/o between regular and block (2x2) matrices to pre-process
+    input into what that shader want's and back again.
+
+    matMul(x:Array<Float>, y:Array<Float>) from matMul.kt implements wraps
+    these shaders for regular matrices.
+
+    Coordinates: Recall openGL has textures indexed like (normed float coords):
 
     0,1 ---- 1,1
      |        |

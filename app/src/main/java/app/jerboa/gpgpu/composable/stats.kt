@@ -25,7 +25,16 @@ import app.jerboa.gpgpu.data.GPUData
 import app.jerboa.gpgpu.composable.slider
 import app.jerboa.gpgpu.ui.theme.DTriangle
 
+/*
+    Composable to actually show the data to the screen.
 
+    Hooks up to the view model for the cpu and gpu benchmark data via cpuStats: CPUData,
+    and gpuStats: GPUData (see statsScreen.kt).
+
+    Events are passed up to the ViewModel view onNChanged, gpuBenchmark, cpuBenchmark
+
+    The Optin for experimental animations can be removed from the Button images quite easily
+ */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun stats(
@@ -41,16 +50,20 @@ fun stats(
     images: Map<String,Int> = mapOf()
 ){
     Column(){
+        // pass onNChanged further down the chain to slider
         slider("Matrix Size (NxN)",onNChanged)
         Spacer(modifier = Modifier.height(32.dp))
         Row() {
+            // cpu stats, just a runtime
             Text("Runtime: " + cpuStats.time +" ms", Modifier.weight(1f))
             Spacer(modifier = Modifier.height(32.dp))
             Button(onClick = {
+                // pass up to view model to request a cpu benchmark
                 cpuBenchmark()
             }) {
-                // Inner content including an icon and a text label
+                // dummy
                 var theta by remember { mutableStateOf(270f)}
+                // animate a fade to 0.33f alpha to show user benchmark is running (isWaiting)
                 AnimatedContent(targetState = theta) {
                     Image(
                         painter = painterResource(id = images["logo"]!!),
@@ -71,6 +84,7 @@ fun stats(
         }
         Spacer(modifier = Modifier.height(64.dp))
         Row() {
+            // gpu stats, also split the time into drawing and data shunting
             Column(Modifier.weight(1f)) {
                 Text("Runtime: " + gpuStats.time + " ms")
                 Text("Drawing: " + gpuStats.drawTime+" ns")
@@ -78,10 +92,12 @@ fun stats(
                 Text("Error: " + gpuStats.error)
             }
             Button(onClick = {
+                // pass up to view model to request a gpu benchmark
                 gpuBenchmark()
             }) {
-                // Inner content including an icon and a text label
+                // dummy
                 var theta by remember { mutableStateOf(270f)}
+                // animate a fade to 0.33f alpha to show user benchmark is running (isWaiting)
                 AnimatedContent(targetState = theta) {
                     Image(
                         painter = painterResource(id = images["logo"]!!),
