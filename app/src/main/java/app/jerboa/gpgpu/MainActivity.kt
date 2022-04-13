@@ -22,11 +22,14 @@ import javax.microedition.khronos.egl.EGLContext
 class MainActivity : ComponentActivity() {
 
     // viewmodels
+    val images: Map<String,Int> = mapOf(
+        "logo" to R.drawable.ic_launcher_background
+    )
+
     private val statsViewModel by viewModels<StatsViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
 
         setContent {
             GPGPUTheme() {
@@ -38,7 +41,7 @@ class MainActivity : ComponentActivity() {
                     // main column
                     Column(Modifier.padding(all=8.dp)) {
                         // the screen!
-                        statsScreen(statsViewModel)
+                        statsScreen(statsViewModel,images=images)
                     }
                 }
             }
