@@ -107,7 +107,7 @@ class StatsViewModel : ViewModel(){
         }
 
         gpuC = trimMatrix(BlockMatrix2x2ToMatrix(c.first.toTypedArray()),m)
-
+        printMatrix(gpuC!!)
         onGPUStatsChanged(GPUData(t,c.second,c.third,0f))
 
         if (cpuC != null){

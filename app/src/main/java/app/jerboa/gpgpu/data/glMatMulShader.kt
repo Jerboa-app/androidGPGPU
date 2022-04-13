@@ -74,7 +74,8 @@ package app.jerboa.gpgpu.data
 data class glMatMulShader(
     override val vertexShader: String =
         "#version 300 es\n"+
-        "precision mediump float;\n"+
+        "precision highp float;\n"+
+        "precision highp int;\n"+
         "layout(location = 0) in vec3 position;\n"+
         "layout(location = 1) in vec2 i_texCoords;\n"+
         "out vec2 o_texCoords;\n"+
@@ -84,11 +85,12 @@ data class glMatMulShader(
         "}\n",
     override val fragmentShader: String =
         "#version 300 es\n"+
-        "precision mediump float;\n"+
+        "precision highp float;\n"+
+        "precision highp int;\n"+
         "in vec2 o_texCoords;\n"+
         "layout(location = 0) out vec4 o_fragColor;\n"+
-        "uniform sampler2D textureX;\n"+
-        "uniform sampler2D textureY;\n"+
+        "uniform highp sampler2D textureX;\n"+
+        "uniform highp sampler2D textureY;\n"+
         "uniform int n;\n"+
         "vec4 BlockMul(in vec4 A, in vec4 B){\n"+
         "   return vec4(A.r*B.r+A.g*B.b, A.r*B.g+A.g*B.a, A.b*B.r+A.a*B.b, A.b*B.g+A.a*B.a);\n"+
