@@ -41,7 +41,7 @@ fun stats(
     cpuStats: CPUData,
     gpuStats: GPUData,
     n: Int,
-    isWaiting:Boolean,
+    isWaiting:Pair<Boolean,Boolean>,
     onCPUStatsChanged: (CPUData)->Unit,
     onGPUStatsChanged: (GPUData)->Unit,
     onNChanged: (Int)->Unit,
@@ -71,7 +71,7 @@ fun stats(
                         modifier = Modifier
                             .rotate(270f)
                             .size(40.dp)
-                            .alpha(if(isWaiting){0.33f}else{1f})
+                            .alpha(if(isWaiting.first){0.33f}else{1f})
                             .clip(
                                 DTriangle(with(LocalDensity.current) { 32.dp.toPx() })
                             )
@@ -105,7 +105,7 @@ fun stats(
                         modifier = Modifier
                             .rotate(270f)
                             .size(40.dp)
-                            .alpha(if(isWaiting){0.33f}else{1f})
+                            .alpha(if(isWaiting.second){0.33f}else{1f})
                             .clip(
                                 DTriangle(with(LocalDensity.current) { 32.dp.toPx() })
                             )

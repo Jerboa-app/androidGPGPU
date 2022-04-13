@@ -22,12 +22,15 @@ class StatsViewModel : ViewModel(){
     private val _cpuStats = MutableLiveData(CPUData(0))
     private val _gpuStats = MutableLiveData(GPUData(0,0,0,0f))
     private val _n = MutableLiveData(2)
-    private val _isWaiting = MutableLiveData<Boolean>(false)
+    private val _isWaiting = MutableLiveData<Pair<Boolean,Boolean>>(Pair(
+        first = false,
+        second = false
+    ))
 
     val cpuStats: LiveData<CPUData> = _cpuStats
     val gpuStats: LiveData<GPUData> = _gpuStats
     val n: LiveData<Int> = _n
-    val isWaiting: LiveData<Boolean> = _isWaiting
+    val isWaiting: LiveData<Pair<Boolean,Boolean>> = _isWaiting
 
     private var seed: Long = 0
     private var invalidatedMatrices: Boolean = false
@@ -62,8 +65,8 @@ class StatsViewModel : ViewModel(){
     }
 
     private suspend fun _cpuBenchmark() {
-        if (_isWaiting.value == true){return}
-        _isWaiting.value = true
+        if (_isWaiting.value!!.first || _isWaiting.value!!.second){return}
+        _isWaiting.value = Pair(true,_isWaiting.value!!.second)
         val m = n.value!!
         if (invalidatedMatrices){
             matrixA = genMatrix(m,seed)
@@ -89,7 +92,7 @@ class StatsViewModel : ViewModel(){
                 )
             )
         }
-        _isWaiting.value = false
+        _isWaiting.value = Pair(false,_isWaiting.value!!.second)
     }
 
     fun cpuBenchmark(){
@@ -99,8 +102,8 @@ class StatsViewModel : ViewModel(){
     }
 
     private suspend fun _gpuBenchmark(){
-        if (_isWaiting.value == true){return}
-        _isWaiting.value = true
+        if (_isWaiting.value!!.first || _isWaiting.value!!.second){return}
+        _isWaiting.value = Pair(_isWaiting.value!!.first,true)
         val m = n.value!!
         if (invalidatedMatrices){
             matrixA = genMatrix(m,seed)
@@ -130,7 +133,7 @@ class StatsViewModel : ViewModel(){
                 )
             )
         }
-        _isWaiting.value=false
+        _isWaiting.value = Pair(_isWaiting.value!!.first,false)
     }
 
     fun gpuBenchmark(){

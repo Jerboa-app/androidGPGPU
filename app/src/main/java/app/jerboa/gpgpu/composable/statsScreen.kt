@@ -17,7 +17,10 @@ fun statsScreen(statsViewModel: StatsViewModel, images: Map<String,Int> = mapOf(
     val cpuStats: CPUData by statsViewModel.cpuStats.observeAsState(initial = CPUData(0))
     val gpuStats: GPUData by statsViewModel.gpuStats.observeAsState(GPUData(0,0,0,0f))
     val n: Int by statsViewModel.n.observeAsState(2)
-    val isWaiting: Boolean by statsViewModel.isWaiting.observeAsState(false)
+    val isWaiting: Pair<Boolean,Boolean> by statsViewModel.isWaiting.observeAsState(Pair(
+        first = false,
+        second = false
+    ))
     // pass observed states down the tree
     stats(
         cpuStats=cpuStats,
